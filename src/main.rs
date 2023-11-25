@@ -46,9 +46,22 @@ async fn main() {
             grid.update();
         }
 
-        clear_background(BLACK);
+        // clear_background(BLACK);
 
-        grid.draw(draw_mode);
+        let image = grid.to_image(draw_mode);
+
+        let texture = Texture2D::from_image(&image);
+
+        draw_texture_ex(
+            &texture,
+            0.,
+            0.,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(WINDOW_SIZE_PX),
+                ..Default::default()
+            },
+        );
 
         // Print FPS every second
         if get_time() % 1. < get_frame_time() as f64 {

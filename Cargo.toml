@@ -6,10 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [profile.release]
-debug = true
+debuginfo-level = 1
+jemalloc = false
 
 [dependencies]
 macroquad = "0.4.4"
 rand = "0.8.5"
 core_affinity = "0.8.0"
 num_cpus = "1.14.0"
+fastrand = "2.0.1"

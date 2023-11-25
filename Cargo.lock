@@ -83,6 +83,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "fastrand"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25cbce373ec4653f1a01a31e8a5e5ec0c622dc27ff9c4e6606eefef5cbbed4a5"
+
+[[package]]
 name = "fdeflate"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -355,6 +361,7 @@ name = "regimes"
 version = "0.1.0"
 dependencies = [
  "core_affinity",
+ "fastrand",
  "macroquad",
  "num_cpus",
  "rand",
