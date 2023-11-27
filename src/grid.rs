@@ -77,11 +77,18 @@ impl Grid {
 
         for i in 0..(1 << NUM_CONNECTIONS) {
             update_table.insert(i, fastrand::bool());
+
+            while (i == 0 && update_table[&i] == true)
+                || (i == (1 << NUM_CONNECTIONS) - 1 && update_table[&i] == false)
+            {
+                update_table.remove(&i);
+                update_table.insert(i, fastrand::bool());
+            }
         }
 
         // Epilepsy fix
-        update_table.insert(0, false);
-        update_table.insert((1 << NUM_CONNECTIONS) - 1, true);
+        // update_table.insert(0, false);
+        // update_table.insert((1 << NUM_CONNECTIONS) - 1, true);
 
         println!();
         for i in 0..(1 << NUM_CONNECTIONS) {
@@ -101,6 +108,13 @@ impl Grid {
             changes_len: 20,
             num_changes: vec![0; width * height],
         }
+    }
+
+    pub fn toggle_cell(&mut self, pos: Vec2) {
+        let x = pos.x as usize;
+        let y = pos.y as usize;
+
+        self.cells[x + y * self.width] = !self.cells[x + y * self.width];
     }
 
     pub fn update(&mut self) {
@@ -177,7 +191,8 @@ impl Grid {
         }
     }
 
-    pub fn to_image(&self, draw_mode: DrawMode) -> Image {
+    // other is None for normal drawing, otherwise the pixels that are different will be drawn in blue
+    pub fn to_image_compared_to(&self, other: Option<&Self>, draw_mode: DrawMode) -> Image {
         let mut image = Image::gen_image_color(
             self.width as u16,
             self.height as u16,
@@ -196,6 +211,10 @@ impl Grid {
 
         thread::scope(|x| unsafe {
             let self_ptr = self as *const _ as usize;
+            let other_ptr = match other {
+                None => 0,
+                Some(_) => other.unwrap() as *const _ as usize,
+            };
             let image = img_ref as *const _ as usize;
 
             let mut i = 0;
@@ -206,6 +225,10 @@ impl Grid {
                 x.spawn(move || {
                     core_affinity::set_for_current(core_id);
                     let slf = &*(self_ptr as *const Self);
+                    let other: Option<&Grid> = match other {
+                        None => None,
+                        Some(_) => Some(&*(other_ptr as *const Self)),
+                    };
 
                     let image = &mut *(image as *mut Image);
 
@@ -214,27 +237,35 @@ impl Grid {
                         let y = i / slf.width;
 
                         let cell = slf.cells[i];
+                        let other_cell = match other {
+                            None => cell,
+                            Some(other) => other.cells[i],
+                        };
 
-                        let color = match draw_mode {
-                            DrawMode::Normal => {
-                                if cell {
-                                    WHITE
-                                } else {
-                                    BLACK
+                        let color = if cell != other_cell {
+                            Color::new(0., 0., 1., 1.)
+                        } else {
+                            match draw_mode {
+                                DrawMode::Normal => {
+                                    if cell {
+                                        WHITE
+                                    } else {
+                                        BLACK
+                                    }
                                 }
-                            }
 
-                            DrawMode::Changes => {
-                                let num_changes = slf.num_changes[i];
+                                DrawMode::Changes => {
+                                    let num_changes = slf.num_changes[i];
 
-                                let red = if num_changes == 0 { 1. } else { 0. };
-                                let green = if num_changes > 0 {
-                                    0.5 + num_changes as f32 / slf.changes_len as f32
-                                } else {
-                                    0.
-                                };
+                                    let red = if num_changes == 0 { 1. } else { 0. };
+                                    let green = if num_changes > 0 {
+                                        0.5 + num_changes as f32 / slf.changes_len as f32
+                                    } else {
+                                        0.
+                                    };
 
-                                Color::new(red, green, 0., 1.)
+                                    Color::new(red, green, 0., 1.)
+                                }
                             }
                         };
 
@@ -249,5 +280,17 @@ impl Grid {
         });
 
         image
+    }
+
+    pub fn clone(&self) -> Self {
+        Self {
+            cells: self.cells.clone(),
+            connections: self.connections.clone(),
+            update_table: self.update_table.clone(),
+            width: self.width,
+            height: self.height,
+            changes_len: self.changes_len,
+            num_changes: self.num_changes.clone(),
+        }
     }
 }

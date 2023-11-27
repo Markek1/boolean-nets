@@ -22,24 +22,29 @@ async fn main() {
     let mut stdout = stdout();
 
     let mut grid = Grid::new(GRID_SIZE.x as usize, GRID_SIZE.y as usize);
+    let mut comparison_grid: Option<Grid> = None;
     let mut draw_mode = DrawMode::Changes;
 
     let mut paused = false;
+
+    let mut generations_per_frame = 1;
 
     loop {
         if is_key_pressed(KeyCode::Space) {
             paused = !paused;
         }
 
-        if is_key_pressed(KeyCode::M) {
-            match draw_mode {
-                DrawMode::Normal => draw_mode = DrawMode::Changes,
-                DrawMode::Changes => draw_mode = DrawMode::Normal,
-            }
+        if is_key_pressed(KeyCode::Key1) {
+            draw_mode = DrawMode::Normal;
+        }
+
+        if is_key_pressed(KeyCode::Key2) {
+            draw_mode = DrawMode::Changes;
         }
 
         if is_key_pressed(KeyCode::N) {
             grid = Grid::new(GRID_SIZE.x as usize, GRID_SIZE.y as usize);
+            comparison_grid = None;
         }
 
         if is_key_pressed(KeyCode::T) {
@@ -50,13 +55,50 @@ async fn main() {
             grid.randomize_cells();
         }
 
-        if !paused {
-            grid.update();
+        if is_key_pressed(KeyCode::Q) {
+            generations_per_frame = 1;
         }
 
-        // clear_background(BLACK);
+        if is_key_pressed(KeyCode::W) {
+            generations_per_frame = (generations_per_frame - 1).max(1);
+        }
 
-        let image = grid.to_image(draw_mode);
+        if is_key_released(KeyCode::E) {
+            generations_per_frame += 1;
+        }
+
+        if is_mouse_button_down(MouseButton::Left) {
+            let mouse_pos = mouse_position();
+            let cell_pos = Vec2::new(
+                (mouse_pos.0 / WINDOW_SIZE_PX.x * GRID_SIZE.x).floor(),
+                (mouse_pos.1 / WINDOW_SIZE_PX.y * GRID_SIZE.y).floor(),
+            );
+
+            if let None = comparison_grid {
+                comparison_grid = Some(grid.clone());
+            }
+            comparison_grid.as_mut().unwrap().toggle_cell(cell_pos);
+        }
+
+        if !paused {
+            for _ in 0..generations_per_frame {
+                grid.update();
+                match comparison_grid {
+                    None => {}
+                    Some(ref mut cg) => {
+                        cg.update();
+                    }
+                }
+            }
+        }
+
+        let image = grid.to_image_compared_to(
+            match comparison_grid {
+                None => None,
+                Some(ref cg) => Some(&cg),
+            },
+            draw_mode,
+        );
 
         let texture = Texture2D::from_image(&image);
 
@@ -73,7 +115,11 @@ async fn main() {
 
         // Print FPS every second
         if get_time() % 1. < get_frame_time() as f64 {
-            print!("\rFPS: {}", get_fps());
+            print!(
+                "\rFPS: {} gens per frame: {} ",
+                get_fps(),
+                generations_per_frame
+            );
             stdout.flush().expect("Stdout flush failed");
         }
 
