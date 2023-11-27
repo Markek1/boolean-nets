@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::thread;
+use std::time::SystemTime;
 
 use core_affinity;
 use fastrand;
@@ -27,20 +28,32 @@ pub struct Grid {
 
 impl Grid {
     pub fn new(width: usize, height: usize) -> Self {
+        let d = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .expect("Duration since UNIX_EPOCH failed");
+        fastrand::seed(d.as_micros() as u64);
+
         let cells = (0..width * height).map(|_| fastrand::bool()).collect();
 
         let mut connections = vec![[0; NUM_CONNECTIONS]; width * height];
 
-        // The diffs around a square (for distance = 1 it's the 8 squares around and itself)
-        let mut diffs: Vec<(i32, i32)> = (-MAX_DISTANCE_TO_CONNECT..=MAX_DISTANCE_TO_CONNECT)
-            .flat_map(|dx| {
-                (-MAX_DISTANCE_TO_CONNECT..=MAX_DISTANCE_TO_CONNECT).map(move |dy| (dx, dy))
-            })
-            .collect();
+        let mut diffs = if SQUARE_MODE {
+            // The diffs around a square (for distance = 1 it's the 8 squares around and itself)
+            (-MAX_DISTANCE_TO_CONNECT..=MAX_DISTANCE_TO_CONNECT)
+                .flat_map(|dx| {
+                    (-MAX_DISTANCE_TO_CONNECT..=MAX_DISTANCE_TO_CONNECT).map(move |dy| (dx, dy))
+                })
+                .collect()
+        } else {
+            vec![(0, 1), (1, 0), (0, -1), (-1, 0)]
+        };
+        fastrand::shuffle(&mut diffs);
 
         for x in 0..width {
             for y in 0..height {
-                fastrand::shuffle(&mut diffs);
+                if SHUFFLE_DIFFS {
+                    fastrand::shuffle(&mut diffs);
+                }
 
                 let mut num_taken = 0;
 
@@ -70,11 +83,9 @@ impl Grid {
         update_table.insert(0, false);
         update_table.insert((1 << NUM_CONNECTIONS) - 1, true);
 
-        // Print update table
         println!();
         for i in 0..(1 << NUM_CONNECTIONS) {
             print!("{}: ", i);
-            // Print i in binary with NUM_CONNECTIONS digits
             print!("{:0>1$b}", i, NUM_CONNECTIONS);
 
             println!(" -> {}", update_table[&i] as usize);
@@ -146,6 +157,24 @@ impl Grid {
         });
 
         self.cells = new_cells;
+    }
+
+    pub fn randomize_cells(&mut self) {
+        for cell in self.cells.iter_mut() {
+            *cell = fastrand::bool();
+        }
+    }
+
+    pub fn randomize_table(&mut self) {
+        for (key, val) in self.update_table.iter_mut() {
+            *val = fastrand::bool();
+
+            while (*key == 0 && *val == true)
+                || (*key == (1 << NUM_CONNECTIONS) - 1 && *val == false)
+            {
+                *val = fastrand::bool();
+            }
+        }
     }
 
     pub fn to_image(&self, draw_mode: DrawMode) -> Image {

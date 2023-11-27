@@ -38,8 +38,16 @@ async fn main() {
             }
         }
 
-        if is_key_pressed(KeyCode::R) {
+        if is_key_pressed(KeyCode::N) {
             grid = Grid::new(GRID_SIZE.x as usize, GRID_SIZE.y as usize);
+        }
+
+        if is_key_pressed(KeyCode::T) {
+            grid.randomize_table();
+        }
+
+        if is_key_pressed(KeyCode::C) {
+            grid.randomize_cells();
         }
 
         if !paused {
