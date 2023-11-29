@@ -83,11 +83,8 @@ async fn main() {
         if !paused {
             for _ in 0..generations_per_frame {
                 grid.update();
-                match comparison_grid {
-                    None => {}
-                    Some(ref mut cg) => {
-                        cg.update();
-                    }
+                if let Some(ref mut cg) = comparison_grid {
+                    cg.update();
                 }
             }
         }
