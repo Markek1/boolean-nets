@@ -74,7 +74,7 @@ async fn main() {
                 (mouse_pos.1 / WINDOW_SIZE_PX.y * GRID_SIZE.y).floor(),
             );
 
-            if let None = comparison_grid {
+            if comparison_grid.is_none() {
                 comparison_grid = Some(grid.clone());
             }
             comparison_grid.as_mut().unwrap().toggle_cell(cell_pos);

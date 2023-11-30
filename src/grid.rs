@@ -2,10 +2,7 @@ use std::collections::HashMap;
 use std::thread;
 use std::time::SystemTime;
 
-use core_affinity;
-use fastrand;
 use macroquad::prelude::*;
-use num_cpus;
 
 use crate::config::*;
 
@@ -78,8 +75,8 @@ impl Grid {
         for i in 0..(1 << NUM_CONNECTIONS) {
             update_table.insert(i, fastrand::bool());
 
-            while (i == 0 && update_table[&i] == true)
-                || (i == (1 << NUM_CONNECTIONS) - 1 && update_table[&i] == false)
+            while (i == 0 && update_table[&i])
+                || (i == (1 << NUM_CONNECTIONS) - 1 && !update_table[&i])
             {
                 update_table.remove(&i);
                 update_table.insert(i, fastrand::bool());
@@ -179,9 +176,7 @@ impl Grid {
         for (key, val) in self.update_table.iter_mut() {
             *val = fastrand::bool();
 
-            while (*key == 0 && *val == true)
-                || (*key == (1 << NUM_CONNECTIONS) - 1 && *val == false)
-            {
+            while (*key == 0 && *val) || (*key == (1 << NUM_CONNECTIONS) - 1 && (!*val)) {
                 *val = fastrand::bool();
             }
         }
