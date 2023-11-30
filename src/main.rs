@@ -10,7 +10,7 @@ use grid::{DrawMode, Grid};
 
 fn window_config() -> Conf {
     Conf {
-        window_title: "Particle Life".to_owned(),
+        window_title: "Boolean Nets".to_owned(),
         window_width: WINDOW_SIZE_PX.x.round() as i32,
         window_height: WINDOW_SIZE_PX.y.round() as i32,
         ..Default::default()
