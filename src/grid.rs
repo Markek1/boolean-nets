@@ -86,10 +86,6 @@ impl Grid {
             }
         }
 
-        // Epilepsy fix
-        // update_table.insert(0, false);
-        // update_table.insert((1 << NUM_CONNECTIONS) - 1, true);
-
         println!();
         for i in 0..(1 << NUM_CONNECTIONS) {
             print!("{}: ", i);
